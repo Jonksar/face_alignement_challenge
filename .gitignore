@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# dataset folder
+youtube-faces-with-facial-keypoints/
