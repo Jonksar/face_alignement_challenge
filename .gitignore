@@ -105,3 +105,9 @@ venv.bak/
 
 # dataset folder
 youtube-faces-with-facial-keypoints/
+
+# debug images folder
+debug/
+
+# Annoy approximate nearest neighbours files
+*.ann
