@@ -162,13 +162,13 @@ class FaceEmbeddingGenerator3D(FaceEmbeddingGenerator):
 def build_index(embeddingMaker, videoDF, landmarks_index_args, save=True, query_loc=0):
     landmarks_index = AnnoyIndex(*landmarks_index_args)  # Approximate search index
     face_counter = 0
-    videoDF = pd.read_csv('./youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_large.csv')
+    videoDF = pd.read_csv('./data/youtube_faces_with_keypoints_large.csv')
     for video_i, row in tqdm(videoDF.iterrows(), total=len(videoDF)):
         # Dont add video to the index
         if video_i == query_loc:
             continue
 
-        db_paths = glob("./youtube-faces-with-facial-keypoints/*/{videoID}.npz".format(
+        db_paths = glob("./data/*/{videoID}.npz".format(
             videoID=videoDF.loc[video_i].videoID))  # To face align with this
         if len(db_paths) == 0:
             continue
@@ -193,14 +193,14 @@ def build_index(embeddingMaker, videoDF, landmarks_index_args, save=True, query_
         landmarks_index.save('landmarks.ann')
 
         print("Saving csv alongside index...")
-        videoDF.to_csv('youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_large.csv', index=False)
+        videoDF.to_csv('data/youtube_faces_with_keypoints_large.csv', index=False)
 
     return landmarks_index, videoDF
 
 
 def load_index_and_metadata(landmarks_index_args):
     print("Loading metadata csv...")
-    videoDF = pd.read_csv('./youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_large.csv')
+    videoDF = pd.read_csv('./data/youtube_faces_with_keypoints_large.csv')
 
     print("Loading face embedding index...")
     landmarks_index = AnnoyIndex(*landmarks_index_args)
@@ -215,7 +215,7 @@ def load_data_by_id(id, videoDF):
     if len(video) == 0:
         return None, None, None, None
 
-    paths = glob("./youtube-faces-with-facial-keypoints/*/{videoID}.npz".format(videoID=video.iloc[0].videoID))
+    paths = glob("./data/*/{videoID}.npz".format(videoID=video.iloc[0].videoID))
     if len(paths) == 0:
         return None, None, None, None
 
@@ -235,26 +235,26 @@ def load_image_by_id(id, videoDF):
 # @click.argument('-i', '--input', type=click.Path(exists=True))
 # @click.argument('-o', '--output', type=click.Path(exists=False))
 @click.option('-idx', '--idx', type=int, default=10)
-@click.option('--index', type=click.Choice(['build', 'load']), default='build')
+@click.option('--index', type=click.Choice(['build', 'load']), default='load')
 def face_alignement(idx, index='build'):
-    videoDF = pd.read_csv('./youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_large.csv')
+    videoDF = pd.read_csv('./data/youtube_faces_with_keypoints_large.csv')
 
     # Setting up query video
     query_loc = idx
     query_path = \
-        glob("./youtube-faces-with-facial-keypoints/*/{videoID}.npz".format(videoID=videoDF.loc[query_loc].videoID))[
+        glob("./data/*/{videoID}.npz".format(videoID=videoDF.loc[query_loc].videoID))[
             0]  # To face align with this
     q_colorImages, q_boundingBox, q_landmarks2D, q_landmarks3D = load_data(query_path)
 
     embeddingMaker = FaceEmbeddingGenerator2D()  # Embedding generator for 3D face keypoints
     landmarks_index_args = [embeddingMaker.dim, 'euclidean']
 
-    videoDF = pd.read_csv('./youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_large.csv')
+    videoDF = pd.read_csv('./data/youtube_faces_with_keypoints_large.csv')
 
-    if index == 'build':
+    if index == 'load':
         landmarks_index, videoDF = load_index_and_metadata(landmarks_index_args=landmarks_index_args)
-    elif index == 'load':
-        landmarks_index, videoDF = build_index(embeddingMaker, videoDF)
+    elif index == 'build':
+        landmarks_index, videoDF = build_index(embeddingMaker, videoDF, landmarks_index_args)
     else:
         raise ValueError("Index didn't get built or loaded.")
 
@@ -289,7 +289,7 @@ def face_alignement(idx, index='build'):
             last_predicted_image = best_image
 
         plt.suptitle(f"Cost: {frame_cost}")
-        dbg_name = f"debug/debug_{i:03d}.jpg"
+        dbg_name = f"debug/debug_{i:03d}.png"
         print(f"Saving debug image: {dbg_name}")
         plt.savefig(dbg_name)
 
