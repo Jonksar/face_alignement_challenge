@@ -2,7 +2,6 @@ import logging
 import logging.handlers
 from datetime import datetime
 
-
 LOGGING_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 

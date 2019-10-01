@@ -1,6 +1,6 @@
 import numpy as np
 
-from base import ProcessorBase, load_data_by_id, ProcessorResult
+from base import ProcessorBase, ProcessorResult, load_data_by_id
 
 
 class Processor(ProcessorBase):

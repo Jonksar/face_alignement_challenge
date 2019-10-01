@@ -1,14 +1,14 @@
+import glob
 import logging
+from glob import glob
 
 import attr
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import glob
-from glob import glob
-from tqdm import tqdm
-import cv2
 from annoy import AnnoyIndex
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 

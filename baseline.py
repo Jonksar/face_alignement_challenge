@@ -1,13 +1,12 @@
-import numpy as np
-
-from base import ProcessorBase, load_data_by_id, ProcessorResult, get_annoy_index, load_data
-
-import logging
-
-import pandas as pd
 import glob
+import logging
 from glob import glob
+
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
+
+from base import ProcessorBase, ProcessorResult, get_annoy_index, load_data, load_data_by_id
 
 logger = logging.getLogger(__name__)
 
