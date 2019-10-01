@@ -1,6 +1,6 @@
 # Face alignment challenge
 
-## There is a grand prize of 500€ for the first place!
+## There is a grand prize of 500€ for the first place and additional smaller prizes for others!
 
 ## Goal
 > *The goal of the challenge is to make a good-looking montage of images from videos from a database of celebrity videos to match an unknown target video! We will also look through best scoring videos and add points for creativity!*
