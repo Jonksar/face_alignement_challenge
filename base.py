@@ -1,3 +1,6 @@
+import logging
+
+import attr
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,8 +10,15 @@ from tqdm import tqdm
 import cv2
 from annoy import AnnoyIndex
 import click
+logger = logging.getLogger(__name__)
 
-from base import build_index, FaceEmbeddingGenerator2D, load_data
+
+@attr.s(auto_attribs=True)
+class ProcessorResult:
+    frame: np.ndarray
+    frame_idx: int
+
+    landmarks: np.array = None
 
 
 def overlay_landmarks_on_frame(landmarks, frame):
@@ -166,6 +176,8 @@ class FaceEmbeddingGenerator:
     Base class of embedding generators
     """
 
+    dim: int
+
     @staticmethod
     def make_embedding(embedding):
         return embedding.flatten()
@@ -183,10 +195,21 @@ class FaceEmbeddingGenerator3D(FaceEmbeddingGenerator):
     dim = 68 * 3
 
 
-def build_index(embeddingMaker, videoDF, landmarks_index_args, save=True, query_loc=0):
-    landmarks_index = AnnoyIndex(*landmarks_index_args)  # Approximate search index
+def get_embedding_maker() -> FaceEmbeddingGenerator:
+    return FaceEmbeddingGenerator2D()
+
+
+def get_annoy_index(embeddingMaker: FaceEmbeddingGenerator) -> AnnoyIndex:
+    landmarks_index_args = [embeddingMaker.dim, "euclidean"]
+    return AnnoyIndex(*landmarks_index_args)  # Approximate search index
+
+
+def build_index(videos_csv_filename: str, save=True, query_loc=0):
+    embeddingMaker = get_embedding_maker()
+    landmarks_index = get_annoy_index(embeddingMaker)
     face_counter = 0
-    videoDF = pd.read_csv("./data/youtube_faces_with_keypoints_large.csv")
+    videoDF = pd.read_csv(videos_csv_filename)
+
     for video_i, row in tqdm(videoDF.iterrows(), total=len(videoDF)):
         # Dont add video to the index
         if video_i == query_loc:
@@ -228,18 +251,18 @@ def build_index(embeddingMaker, videoDF, landmarks_index_args, save=True, query_
     return landmarks_index, videoDF
 
 
-def load_index_and_metadata(landmarks_index_args):
+def load_index_and_metadata(videos_csv_filename: str):
     print("Loading metadata csv...")
-    videoDF = pd.read_csv("./data/youtube_faces_with_keypoints_large.csv")
+    videoDF = pd.read_csv(videos_csv_filename)
 
     print("Loading face embedding index...")
-    landmarks_index = AnnoyIndex(*landmarks_index_args)
+    landmarks_index = get_annoy_index(get_embedding_maker())
     landmarks_index.load("landmarks.ann")  # super fast, will just mmap the file
 
     return landmarks_index, videoDF
 
 
-def load_data_by_id(id, videoDF):
+def load_data_by_id(id: int, videoDF):
     """Given an frame ID, and a dataset description"""
     video = videoDF[(videoDF.start < id) & (videoDF.end > id)]
     if len(video) == 0:
@@ -263,6 +286,127 @@ def load_data_by_id(id, videoDF):
 def load_image_by_id(id, videoDF):
     """Utility function to get a single frame by ID"""
     return load_data_by_id(id, videoDF)[0]
+
+
+def foo(q_colorImages, landmarks_index, embeddingMaker):
+    last_predicted_image = q_colorImages[..., 0]
+    for i in tqdm(range(q_colorImages.shape[-1])):
+        query_image = q_colorImages[..., i]
+        nns, dists = landmarks_index.get_nns_by_vector(
+            embeddingMaker.make_embedding(q_landmarks2D[..., i]),
+            10,
+            include_distances=True,
+        )
+
+        best_matches = [(image_i, dist) for image_i, dist in zip(nns, dists)]
+        image_diffs = sorted(
+            best_matches, key=lambda x: x[1], reverse=True
+        )  # sort by distance
+
+        best_match_idx = image_diffs[0][0]
+        best_image, _, best_landmarks2D, best_landmarks3D = load_data_by_id(
+            best_match_idx, videoDF
+        )
+
+        if not (last_predicted_image is None or best_image is None):
+            plot_images_in_row(
+                last_predicted_image,
+                overlay_landmarks_on_frame(best_landmarks2D, best_image),
+                overlay_landmarks_on_frame(q_landmarks2D[..., i], query_image),
+                titles=["Last frame", f"Query {i}", f"Target {best_match_idx}"],
+            )
+
+        # Something went badly wrong.
+        if last_predicted_image is None or best_image is None:
+            print(
+                f"last_predicted_image is None: {last_predicted_image is None}; best_image is None: {best_image is None}"
+            )
+            continue
+        else:
+            frame_cost = frame_cost_function(
+                last_predicted_image,
+                best_image,
+                q_landmarks2D[..., i],
+                best_landmarks2D,
+                query_image,
+            )
+            last_predicted_image = best_image
+
+        plt.suptitle(f"Cost: {frame_cost}")
+        dbg_name = f"debug/debug_{i:03d}.png"
+        print(f"Saving debug image: {dbg_name}")
+        plt.savefig(dbg_name)
+
+        plt.close(fig="all")
+
+    # TODO: Documentation
+    # TODO: Command line utility that takes video in, and returns generated video
+
+
+class ProcessorBase:
+    default_index_filename = "data/index"
+
+    def __init__(self, videos_csv_filename: str) -> None:
+        self.embedding_maker = get_embedding_maker()
+        self.video_df = pd.read_csv(videos_csv_filename)
+
+    def build_index(self, filename: str = None):
+        pass
+
+    def load_index(self, filename: str = None):
+        pass
+
+    def reset(self) -> None:
+        pass
+
+    def process_frame(self, frame: np.ndarray, landmarks) -> ProcessorResult:
+        raise NotImplementedError()
+
+    def process_video(self, index_filename):
+        self.reset()
+
+        if index_filename is None:
+            index_filename = self.default_index_filename
+
+        q_colorImages, q_boundingBox, q_landmarks2D, q_landmarks3D = load_data(index_filename)
+        self.load_index(index_filename)
+
+        last_predicted_image = q_colorImages[..., 0]
+        for i in tqdm(range(q_colorImages.shape[-1])):
+            query_image = q_colorImages[..., i]
+            landmarks = q_landmarks2D[..., i]
+            result = self.process_frame(frame=query_image, landmarks=landmarks)
+
+            if not (last_predicted_image is None or result.frame is None):
+                plot_images_in_row(
+                    last_predicted_image,
+                    overlay_landmarks_on_frame(result.landmarks, result.frame),
+                    overlay_landmarks_on_frame(q_landmarks2D[..., i], query_image),
+                    titles=["Last frame", f"Query {i}", f"Target {result.frame_idx}"],
+                )
+
+            # Something went badly wrong.
+            if last_predicted_image is None or result.frame is None:
+                print(
+                    f"last_predicted_image is None: {last_predicted_image is None}; best_image is None: {result.frame is None}"
+                )
+                continue
+            else:
+                frame_cost = frame_cost_function(
+                    last_predicted_image,
+                    result.frame,
+                    q_landmarks2D[..., i],
+                    result.landmarks,
+                    query_image,
+                )
+                last_predicted_image = result.frame
+
+            plt.suptitle(f"Cost: {frame_cost}")
+            dbg_name = f"debug/debug_{i:03d}.png"
+            print(f"Saving debug image: {dbg_name}")
+            plt.savefig(dbg_name)
+
+            plt.close(fig="all")
 
 
 @click.command()
