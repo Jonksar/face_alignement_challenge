@@ -1,6 +1,6 @@
 import numpy as np
 
-from base import ProcessorBase, load_data_by_id, ProcessorResult, get_annoy_index
+from base import ProcessorBase, load_data_by_id, ProcessorResult, get_annoy_index, load_data
 
 import logging
 
@@ -22,11 +22,9 @@ class BaselineProcessor(ProcessorBase):
 
         self.landmarks_index = get_annoy_index(self.embedding_maker)
 
-    def build_index(self, filename: str = None):
-        if filename is None:
-            filename = self.default_index_filename
-
+    def build_index(self, filename: str):
         face_counter = 0
+        logger.info("Loading videos...")
         for video_i, row in tqdm(self.video_df.iterrows(), total=len(self.video_df)):
             db_paths = glob(
                 "./data/*/{videoID}.npz".format(videoID=self.video_df.loc[video_i].videoID)
@@ -54,17 +52,21 @@ class BaselineProcessor(ProcessorBase):
         logger.info("Building index...")
         self.landmarks_index.build(10)  # 10 trees
 
-        index_filename = f"{filename}.landmarks.ann"
-        logger.info("Saving index to %s", filename)
-        self.landmarks_index.save(filename)
+        # Save the landmarks index
+        landmarks_filename = f"{filename}.landmarks"
+        logger.info("Saving landmarks index to %s", landmarks_filename)
+        self.landmarks_index.save(landmarks_filename)
 
-        # TODO
+        # Save the updated CSV containing start and end for each video
         csv_filename = f"{filename}.landmarks.ann"
-        print("Saving csv alongside index...")
-        self.video_df.to_csv(filename + ".csv", index=False)
+        logger.info("Saving CSV to %s", csv_filename)
+        self.video_df.to_csv(csv_filename, index=False)
 
-    def load_index(self, filename: str = None):
-        self.landmarks_index.load(filename)  # super fast, will just mmap the file
+    def load_index(self, filename: str):
+        csv_filename = f"{filename}.landmarks.ann"
+        self.video_df = pd.read_csv(csv_filename)
+        landmarks_filename = f"{filename}.landmarks"
+        self.landmarks_index.load(landmarks_filename)  # super fast, will just mmap the file
 
     def reset(self) -> None:
         pass
@@ -86,4 +88,4 @@ class BaselineProcessor(ProcessorBase):
             best_match_idx, self.video_df
         )
 
-        return ProcessorResult(frame=best_image, frame_idx=best_match_idx)
+        return ProcessorResult(frame=best_image, frame_idx=best_match_idx, landmarks=landmarks)

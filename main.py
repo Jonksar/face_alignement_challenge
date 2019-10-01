@@ -8,8 +8,6 @@ import cv2
 from annoy import AnnoyIndex
 import click
 
-from base import build_index, FaceEmbeddingGenerator2D, load_data
-
 
 def overlay_landmarks_on_frame(landmarks, frame):
     """

@@ -25,19 +25,25 @@ def cli(debug: bool, baseline: bool):
 
 
 @cli.command()
-@click.option("--videos", "-v", type=click.Path(exists=True), default=videos_csv_filename)
+@click.option("--videos", "-v", type=click.Path(exists=True, dir_okay=False), default=videos_csv_filename)
 def index(videos: str):
+    logger.info("Creating %s", processor_cls.__name__)
     processor = processor_cls(videos)
-    processor.build_index()
+
+    logger.info("Building index")
+    index_filename = f"{videos}.index"
+    processor.build_index(index_filename)
 
 
 @cli.command()
 @click.option("--videos", "-v", type=click.Path(exists=True), default=videos_csv_filename)
-@click.argument('filename', type=click.Path(exists=True, dir_okay=False), required=False)
+@click.argument('filename', type=click.Path(exists=True, dir_okay=False))
 def process_video(videos: str, filename: str = None):
+    logger.info("Creating %s", processor_cls.__name__)
     processor = processor_cls(videos)
 
-    processor.load_index()
+    index_filename = f"{videos}.index"
+    processor.load_index(index_filename)
     logger.info("Processing video from %s", filename)
     processor.process_video(filename)
 
