@@ -11,9 +11,38 @@ For creativity, do image warping, have videos of only a single celebrity, add a 
 
 
 ## Running the code TODO
-1. Download the data
-2. Pull the github repository
-3. Command line interface
+
+### Pull the github repository
+In order to submit an answer, clone current github repository for solution interface
+```
+git clone git@github.com:Jonksar/face_alignement_challenge.git
+cd face_alignement_challenge
+```
+### Download the data
+```
+# Download only 10% of the data, to get started faster ~1GB 
+aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_small.zip .
+aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_small.csv .
+
+# Download the remaining data ~10GB
+aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_big.csv .
+aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_large.csv .
+
+Unzip ZIP files in the root directory of the repository.
+```
+
+### Using command line interface:
+You can get running with:
+```
+# Help about the command line interface
+python cli.py --help
+
+# Build file index, takes about 20s
+python cli.py index 
+
+# Process a video, matching it against the index.
+python cli.py process-video -v PATH_TO_VIDEO
+```
 
 ## Participating
 In TODO, you can find a Processor class that is abstraction for your solution. TODO comments in the code. You are expected to fill this in.
