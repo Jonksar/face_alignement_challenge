@@ -12,6 +12,8 @@ For creativity, do image warping, have videos of only a single celebrity, add a 
 
 ## Running the code TODO
 
+You will need Python 3.6 or later.
+
 ### Pull the github repository
 In order to submit an answer, clone current github repository for solution interface
 ```
@@ -23,18 +25,22 @@ pip install -r requirements.txt
 ```
 ### Download the data
 ```
-# Download only 10% of the data, to get started faster ~1GB 
-aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_small.zip .
-aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_small.csv .
+# Download only 10% of the data, to get started faster ~1GB
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_small.zip
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_small.csv
 
 # Download the remaining data ~10GB
-aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_big.csv .
-aws s3 cp s3://veriff-face-alignment-challenge/youtube_faces_with_keypoints_large.csv .
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_big.csv
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_large.csv
+
+# alternatively use aws cli:
+aws s3 cp s3://veriff-face-alignment-challenge/FILENAME .
 
 Unzip ZIP files in the root directory of the repository.
 ```
 
 ### Using command line interface:
+
 You can get running with:
 ```
 # Help about the command line interface
