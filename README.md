@@ -17,6 +17,9 @@ In order to submit an answer, clone current github repository for solution inter
 ```
 git clone git@github.com:Jonksar/face_alignement_challenge.git
 cd face_alignement_challenge
+
+# You can set up an virtual environment here
+pip install -r requirements.txt
 ```
 ### Download the data
 ```
