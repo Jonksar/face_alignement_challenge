@@ -75,10 +75,10 @@ def load_data(npz_filepath):
     :return: color_images, bounding_box, landmarks_2d, landmarks_3d
     """
     with np.load(npz_filepath) as face_landmark_data:
-        color_images = face_landmark_data["color_images"]
-        bounding_box = face_landmark_data["bounding_box"]
-        landmarks_2d = face_landmark_data["landmarks_2d"]
-        landmarks_3d = face_landmark_data["landmarks_3d"]
+        color_images = face_landmark_data["colorImages"]
+        bounding_box = face_landmark_data["boundingBox"]
+        landmarks_2d = face_landmark_data["landmarks2D"]
+        landmarks_3d = face_landmark_data["landmarks3D"]
 
     return color_images, bounding_box, landmarks_2d, landmarks_3d
 
@@ -230,7 +230,7 @@ class ProcessorBase:
     def reset(self) -> None:
         pass
 
-    def process_frame(self, frame: np.ndarray, landmarks) -> ProcessorResult:
+    def process_frame(self, frame: np.ndarray, landmarks: np.ndarray) -> ProcessorResult:
         raise NotImplementedError()
 
     def process_video(self, video_filename):
