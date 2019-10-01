@@ -3,12 +3,11 @@ import logging.handlers
 from datetime import datetime
 
 
-LOGGING_FORMAT = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+LOGGING_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 
 class IsoDateFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
-        # return datetime.fromtimestamp(record.created).isoformat(timespec='microseconds')
         return datetime.fromtimestamp(record.created).isoformat()
 
 

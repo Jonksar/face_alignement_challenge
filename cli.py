@@ -37,7 +37,7 @@ def index(videos: str):
 
 @cli.command()
 @click.option("--videos", "-v", type=click.Path(exists=True), default=videos_csv_filename)
-@click.argument('filename', type=click.Path(exists=True, dir_okay=False))
+@click.argument("filename", type=click.Path(exists=True, dir_okay=False))
 def process_video(videos: str, filename: str = None):
     logger.info("Creating %s", processor_cls.__name__)
     processor = processor_cls(videos)
