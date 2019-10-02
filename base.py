@@ -258,6 +258,71 @@ class ProcessorBase:
         finally:
             output_writer.close()
 
+    def process_webcam(self, use_cuda: bool = False):
+        logger.info("Loading face-alignment model")
+        try:
+            import face_alignment
+        except ImportError:
+            logger.error("Please install face-alignment package to use webcam input:")
+            logger.error("    pip install face-alignment==1.0.0")
+            return
+
+        device = "cuda" if use_cuda else "cpu"
+        logger.info("Using device %s", device)
+        fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, flip_input=False, device=device)
+
+        self.reset()
+
+        logger.info("Initializing OpenCV video stream")
+        stream = cv2.VideoCapture(0)
+        if stream.isOpened():  # try to get the first frame
+            _, frame = stream.read()
+        else:
+            logger.error("Couldn't open webcam stream")
+            return
+
+        opencv_window_name = "face-alignment"
+        cv2.namedWindow(opencv_window_name)
+
+        last_predicted_image = frame
+        while True:
+            logger.info("Reading frame")
+            ok, frame = stream.read()
+            if not ok:
+                break
+
+            logger.info("Got frame %s", frame.shape)
+
+            preds = fa.get_landmarks(frame)
+            if preds:
+                # TODO: select the largest face
+                landmarks = preds[0]
+
+                result = self.process_frame(frame=frame, landmarks=landmarks)
+
+                if result is None or result.frame is None:
+                    logger.error("Got missing or invalid result")
+                    continue
+                if result.frame.shape != frame.shape:
+                    logger.error(
+                        "Result frame has different shape %s than input frame %s, skipping",
+                        result.frame.shape,
+                        frame.shape,
+                    )
+                    continue
+
+                frame_costs = frame_cost_function(
+                    last_predicted_image, result.frame, landmarks, result.landmarks, frame
+                )
+
+                output_frame = self.create_output_frame(frame, landmarks, result, 0, frame_costs)
+
+            else:
+                output_frame = frame
+
+            cv2.imshow(opencv_window_name, output_frame)
+            cv2.waitKey(30)
+
     def get_output_frame_size(self, input_images_shape: tuple) -> Tuple[int, int]:
         """ Returns size (width, height) of the output frames
 

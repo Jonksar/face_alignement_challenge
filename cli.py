@@ -48,5 +48,18 @@ def process_video(videos: str, filename: str = None):
     processor.process_video(filename)
 
 
+@cli.command()
+@click.option("--cuda", "-c", is_flag=True)
+@click.option("--videos", "-v", type=click.Path(exists=True), default=videos_csv_filename)
+def process_webcam(cuda: bool, videos: str):
+    logger.info("Creating %s", processor_cls.__name__)
+    processor = processor_cls(videos)
+
+    index_filename = f"{videos}.index"
+    processor.load_index(index_filename)
+    logger.info("Processing video from webcam")
+    processor.process_webcam(use_cuda=cuda)
+
+
 if __name__ == "__main__":
     cli()

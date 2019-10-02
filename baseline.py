@@ -72,6 +72,8 @@ class BaselineProcessor(ProcessorBase):
 
         best_match_idx = image_diffs[0][0]
         best_image, _, best_landmarks_2d, best_landmarks_3d = load_data_by_id(best_match_idx, self.video_df)
+        if best_image is None:
+            return None
 
         # Resize the match if needed
         if best_image.shape != frame.shape:
