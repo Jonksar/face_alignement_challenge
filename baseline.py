@@ -2,6 +2,7 @@ import glob
 import logging
 from glob import glob
 
+import cv2
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -71,5 +72,9 @@ class BaselineProcessor(ProcessorBase):
 
         best_match_idx = image_diffs[0][0]
         best_image, _, best_landmarks_2d, best_landmarks_3d = load_data_by_id(best_match_idx, self.video_df)
+
+        # Resize the match if needed
+        if best_image.shape != frame.shape:
+            best_image = cv2.resize(best_image, (frame.shape[1], frame.shape[0]))
 
         return ProcessorResult(frame=best_image, frame_idx=best_match_idx, landmarks=landmarks)

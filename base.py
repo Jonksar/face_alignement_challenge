@@ -253,7 +253,6 @@ class ProcessorBase:
                 last_predicted_image = result.frame
 
                 output_frame = self.create_output_frame(query_image, landmarks, result, i, frame_costs)
-                logger.info("output is %s", output_frame.shape)
                 output_writer.write_frame(output_frame)
 
         finally:
