@@ -4,9 +4,9 @@
 
 ## Goal
 
-*** The goal of the challenge is to make a good-looking montage of images from videos
+***The goal of the challenge is to make a good-looking montage of images from videos
 from a database of celebrity videos to match an unknown target video!
-We will also look through best scoring videos and add points for creativity! ***
+We will also look through best scoring videos and add points for creativity!***
 
 Good-looking face-alignment has been defined as a cost function that 
 incentivizes keeping visual differences low between consecutive frames
@@ -85,10 +85,10 @@ You can get running with:
 python cli.py --help
 
 # Build file index, takes about 20s
-python cli.py index 
+python cli.py index --videos data/train/youtube_faces_with_keypoints_small.csv
 
 # Process a video, matching it against the index.
-python cli.py process-video -v PATH_TO_VIDEO
+python cli.py process-video -v PATH_TO_VIDEO_NPZ
 ```
 
 We also provide a baseline model that you can try by adding `--baseline` flag after `cli.py`:
