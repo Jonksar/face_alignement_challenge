@@ -4,9 +4,9 @@
 
 ## Goal
 
-> The goal of the challenge is to make a good-looking montage of images from videos
-> from a database of celebrity videos to match an unknown target video!
-> We will also look through best scoring videos and add points for creativity!
+*** The goal of the challenge is to make a good-looking montage of images from videos
+from a database of celebrity videos to match an unknown target video!
+We will also look through best scoring videos and add points for creativity! ***
 
 Good-looking face-alignment has been defined as a cost function that 
 incentivizes keeping visual differences low between consecutive frames
@@ -15,9 +15,7 @@ and faces aligned between target and produced outputs.
 For creativity, do image warping, have videos of only a single celebrity, add a beat, do face swaps...
 let your creativity flow and make us laugh! :)
 
-
 ## Running the code
-
 You will need Python 3.6 or later.
 
 ### Setup
@@ -26,9 +24,8 @@ In order to get started, clone current github repository for solution interface
 and set up Python development environment:
 
 ```
-# TODO: correct repo url
-git clone git@github.com:Jonksar/face_alignement_challenge.git
-cd face_alignement_challenge
+git clone git@github.com:Veriff/face_alignment_challenge.git
+cd face_alignment_challenge
 
 # You can set up an virtual environment here
 python3 -m venv venv
@@ -39,20 +36,45 @@ pip install -r requirements.txt
 ```
 
 ### Download the data
+We recommend using a `data/` directory within the root of this repositiory.
 
+#### Download only 10% of the data, to get started faster ~1GB
 ```
-# Download only 10% of the data, to get started faster ~1GB
-wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_small.zip
-wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_small.csv
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/small.zip
+```
 
-# Download the remaining data ~10GB
-wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_big.csv
-wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/youtube_faces_with_keypoints_large.csv
+Contents:
+```
+train
+├── Alison_Lohman_0.npz
+├── ...
+├── youtube_faces_with_keypoints_small.csv
+
+test
+├── Vicente_Fox_1.npz
+├── ...
+├── youtube_faces_with_keypoints_small.csv
+```
+
+#### Download the remaining data ~10GB
+```
+wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/large.zip
+```
+
+Contents:
+```
+large_train
+├── Abdel_Aziz_Al-Hakim_0.npz
+├── ...
+├── youtube_faces_with_keypoints_large.csv
+```
+
+Move content of this directory to `train/`: 
+```mv large_train/* train```
 
 # alternatively use aws cli:
+```
 aws s3 cp s3://veriff-face-alignment-challenge/FILENAME .
-
-Unzip ZIP files in the root directory of the repository.
 ```
 
 ### Using command line interface:
