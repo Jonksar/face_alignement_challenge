@@ -129,5 +129,6 @@ Please also add the following details in the e-mail as well:
 ```
 Name:
 Telephone number:
-Short description / feedback about challenge:
+Short description:
+Feedback about challenge (what was fun, what was frustrating etc.):
 ```
