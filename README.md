@@ -15,6 +15,20 @@ and faces aligned between target and produced outputs.
 For creativity, do image warping, have videos of only a single celebrity, add a beat, do face swaps...
 let your creativity flow and make us laugh! :)
 
+Please send your solutions to challenge@veriff.com, more detailed format under [Submitting](https://github.com/Jonksar/face_alignement_challenge#submitting).
+
+## Constraints
+
+1. Processing all 240 frames in a single video should not take more than 1 minute. 
+2. Building an index should not take more than 10 minutes.
+3. We will be running your solution in a standard p2.xlarge machine in AWS (CPU, GPU and memory constraints come from there).
+
+## Timeline
+
+1. Challenge was made for Pycon Estonia 2019 on October 3rd, 2019.
+2. Participations after October 10th, will not be considered valid.
+3. Veriff will announce the winners on October 17th.
+
 ## Running the code
 You will need Python 3.6 or later.
 
@@ -109,6 +123,11 @@ It is OK to use baseline approach as a starting point and improve upon it.
 
 
 ## Submitting
-TODO 
+Please send your solutions to challenge@veriff.com as an attachement.
 
-Challenge to be used in PyCon Estonia 2019
+Please also add the following details in the e-mail as well: 
+```
+Name:
+Telephone number:
+Short description / feedback about challenge:
+```
