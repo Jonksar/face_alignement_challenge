@@ -42,6 +42,8 @@ class Processor(ProcessorBase):
 
         Frame is a color image - a frame from a video. Has shape (height, width, channels) where channels = 3.
         Landmarks is numpy array of shape (68, 2), containing the detected face landmarks.
+
+        Note that the frame in the output MUST have the same shape as the input frame.
         """
 
         raise NotImplementedError()

@@ -1,10 +1,11 @@
 import glob
 import logging
 from glob import glob
+from pathlib import Path
+from typing import Tuple
 
 import attr
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from annoy import AnnoyIndex
@@ -81,48 +82,6 @@ def load_data(npz_filepath):
         landmarks_3d = face_landmark_data["landmarks3D"]
 
     return color_images, bounding_box, landmarks_2d, landmarks_3d
-
-
-def plot_images_in_row(*images, size=3, titles=None):
-    """
-    param: images to plot in a row
-    :param size: inches size for the plot
-    :param titles: subplot titles
-
-    return: matplotlib figure
-    """
-    fig = plt.figure(figsize=(size * len(images), size))
-
-    if titles is None:
-        titles = ["" for _ in images]
-
-    for i, (image, title) in enumerate(zip(images, titles)):
-        plt.subplot(1, len(images), i + 1)
-        plt.title(title)
-        plt.imshow(image)
-
-    return fig
-
-
-def debug_landmark_images(npz_path):
-    """
-    :param npz_path: filepath to a single preprocessed video
-    :return: matplotlib figure
-    """
-    color_images, bounding_box, landmarks_2d, landmarks_3d = load_data(npz_path)
-    print(list(map(lambda x: x.shape, [color_images, bounding_box, landmarks_2d, landmarks_3d])))
-
-    viz_images = []
-
-    num_images = color_images.shape[-1]  # 240
-
-    for i in range(0, num_images, 40):
-        img = color_images[..., i].astype(np.uint8)
-        landmarks = landmarks_2d[..., i].astype(np.int32)
-        img = overlay_landmarks_on_frame(landmarks, img)
-        viz_images.append(img)
-
-    return plot_images_in_row(*viz_images)
 
 
 def full_cost_function(query_video, predicted_video, query_keypoints, predicted_keypoints):
@@ -214,6 +173,35 @@ def load_image_by_id(id, video_df):
     return load_data_by_id(id, video_df)[0]
 
 
+class OutputWriter:
+    def __init__(self, filename: str, width: int, height: int) -> None:
+        super().__init__()
+
+        self.fps = 25
+        self.filename = filename
+        self.frame_no = 0
+
+        fourcc = cv2.VideoWriter_fourcc(*"X264")
+        self.video_writer = cv2.VideoWriter(filename, fourcc, self.fps, (width, height))
+        if not self.video_writer.isOpened():
+            logger.warning("Couldn't create OpenCV video writer, you're probably missing dependencies (see README)")
+            logger.warning("Will write individual frames to %s-frames/ instead", filename)
+            self.video_writer = None
+
+    def write_frame(self, frame: np.ndarray):
+        self.frame_no += 1
+        if self.video_writer is not None:
+            self.video_writer.write(frame)
+        else:
+            frames_dir = Path(f"{self.filename}-frames")
+            frames_dir.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(frames_dir / f"{self.frame_no:04d}.jpg"), frame)
+
+    def close(self):
+        if self.video_writer is not None:
+            self.video_writer.release()
+
+
 class ProcessorBase:
     default_index_filename = "data/index"
 
@@ -233,41 +221,62 @@ class ProcessorBase:
     def process_frame(self, frame: np.ndarray, landmarks: np.ndarray) -> ProcessorResult:
         raise NotImplementedError()
 
-    def process_video(self, video_filename):
+    def process_video(self, video_filename: str, output_filename: str = "output.avi"):
         self.reset()
 
         q_color_images, q_bounding_box, q_landmarks_2d, q_landmarks_3d = load_data(video_filename)
+        logger.info("color shape: %s", q_color_images.shape)
 
         last_predicted_image = q_color_images[..., 0]
-        for i in tqdm(range(q_color_images.shape[-1])):
-            query_image = q_color_images[..., i]
-            landmarks = q_landmarks_2d[..., i]
-            result = self.process_frame(frame=query_image, landmarks=landmarks)
+        output_w, output_h = self.get_output_frame_size(q_color_images.shape)
+        output_writer = OutputWriter(output_filename, output_w, output_h)
+        try:
+            for i in tqdm(range(q_color_images.shape[-1])):
+                query_image = q_color_images[..., i]
+                landmarks = q_landmarks_2d[..., i]
+                result = self.process_frame(frame=query_image, landmarks=landmarks)
 
-            if not (last_predicted_image is None or result.frame is None):
-                plot_images_in_row(
-                    last_predicted_image,
-                    overlay_landmarks_on_frame(result.landmarks, result.frame),
-                    overlay_landmarks_on_frame(q_landmarks_2d[..., i], query_image),
-                    titles=["Last frame", f"Query {i}", f"Target {result.frame_idx}"],
-                )
+                if result is None or result.frame is None:
+                    logger.error("Got missing or invalid result for frame %d", i)
+                    continue
+                if result.frame.shape != query_image.shape:
+                    logger.error(
+                        "Result frame has different shape %s than input frame %s, skipping",
+                        result.frame.shape,
+                        query_image.shape,
+                    )
+                    continue
 
-            # Something went badly wrong.
-            if last_predicted_image is None or result.frame is None:
-                print(
-                    f"last_predicted_image is None: {last_predicted_image is None}; "
-                    f"best_image is None: {result.frame is None}"
-                )
-                continue
-            else:
-                frame_cost = frame_cost_function(
+                frame_costs = frame_cost_function(
                     last_predicted_image, result.frame, q_landmarks_2d[..., i], result.landmarks, query_image
                 )
                 last_predicted_image = result.frame
 
-            plt.suptitle(f"Cost: {frame_cost}")
-            dbg_name = f"debug/debug_{i:03d}.png"
-            print(f"Saving debug image: {dbg_name}")
-            plt.savefig(dbg_name)
+                output_frame = self.create_output_frame(query_image, landmarks, result, i, frame_costs)
+                logger.info("output is %s", output_frame.shape)
+                output_writer.write_frame(output_frame)
 
-            plt.close(fig="all")
+        finally:
+            output_writer.close()
+
+    def get_output_frame_size(self, input_images_shape: tuple) -> Tuple[int, int]:
+        """ Returns size (width, height) of the output frames
+
+        Override this and create_output_frame() to make custom visualizations.
+        """
+
+        image_w = input_images_shape[1]
+        image_h = input_images_shape[0]
+        return image_w * 2, image_h
+
+    def create_output_frame(
+        self, query_image: np.ndarray, landmarks: np.ndarray, result: ProcessorResult, query_index: int, costs
+    ) -> np.ndarray:
+        input_with_landmarks = overlay_landmarks_on_frame(landmarks, query_image)
+        output_with_landmarks = overlay_landmarks_on_frame(result.landmarks, result.frame)
+
+        viz = np.concatenate((input_with_landmarks, output_with_landmarks), axis=1)
+        text = f"Query: {query_index}; target: {result.frame_idx}; cost: {costs[0]:.3f} / {costs[1]:.3f}"
+        cv2.putText(viz, text, (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+
+        return viz
