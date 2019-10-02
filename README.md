@@ -38,6 +38,10 @@ pip install -r requirements.txt
 ### Download the data
 We recommend using a `data/` directory within the root of this repositiory.
 
+Alternative to using wget is to use AWS cli:
+```
+aws s3 cp s3://veriff-face-alignment-challenge/FILENAME .
+```
 #### Download only 10% of the data, to get started faster ~1GB
 ```
 wget https://veriff-face-alignment-challenge.s3-eu-west-1.amazonaws.com/small.zip
@@ -70,11 +74,8 @@ large_train
 ```
 
 Move content of this directory to `train/`: 
-```mv large_train/* train```
-
-# alternatively use aws cli:
 ```
-aws s3 cp s3://veriff-face-alignment-challenge/FILENAME .
+mv large_train/* train
 ```
 
 ### Using command line interface:
