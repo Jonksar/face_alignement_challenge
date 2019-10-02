@@ -286,7 +286,8 @@ class ProcessorBase:
                 return
 
             opencv_window_name = "face-alignment"
-            cv2.namedWindow(opencv_window_name)
+            cv2.namedWindow(opencv_window_name, cv2.WINDOW_NORMAL)
+            cv2.resizeWindow(opencv_window_name, 1000, 500)
 
             last_predicted_image = frame
             while True:
@@ -325,7 +326,17 @@ class ProcessorBase:
                     output_frame = frame
 
                 cv2.imshow(opencv_window_name, output_frame)
-                cv2.waitKey(30)
+                key = cv2.waitKey(30) & 0xFF
+                if key == ord("q"):
+                    logger.info("Quitting")
+                    break
+                elif key == ord("f"):
+                    is_fs = cv2.getWindowProperty(opencv_window_name, cv2.WND_PROP_FULLSCREEN) == cv2.WINDOW_FULLSCREEN
+                    cv2.setWindowProperty(
+                        opencv_window_name,
+                        cv2.WND_PROP_FULLSCREEN,
+                        cv2.WINDOW_FULLSCREEN if not is_fs else cv2.WINDOW_NORMAL,
+                    )
 
         finally:
             stream.stop()
